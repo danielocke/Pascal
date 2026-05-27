@@ -3,7 +3,7 @@ from PySide6.QtWidgets import (
     QGraphicsPixmapItem
 )
 from PySide6.QtGui import QPixmap
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QObject, Signal
 
 ASSET_PATH = os.path.abspath('./assets')
 
@@ -12,6 +12,7 @@ ASSET_PATH = os.path.abspath('./assets')
 # Head
 H_NEUTRAL = 0
 H_SMILE   = 1
+H_UPSET   = 2
 
 # Tail
 TL_NEUTRAL = 0
@@ -26,6 +27,10 @@ TG_NEUTRAL = 1
 TG_UP      = 2
 TG_DOWN    = 3
 
+# Headphones
+HP_ON = 1
+
+
 def load_pixmap(filename: (str|None), filetype:str = 'png'):
     if filename == None:
         return None
@@ -36,3 +41,6 @@ def load_frames(files:list[str|None], filetype:str = 'png'):
     return [load_pixmap(file, filetype) for file in files]
 
 
+class Async_Bridge(QObject):
+    move_signal  = Signal(int, int)
+    noisy_signal = Signal() 

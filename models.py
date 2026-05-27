@@ -83,11 +83,12 @@ class Snake:
         self.scale = scale
 
         self.body = {
-            'eyes'   : GraphicsObject(x, y, ['eyes_neutral', 'eyes_closed'],                      z = 5, scale = scale),
-            'tail'   : GraphicsObject(x, y, ['tail_neutral', 'tail_down'],                        z = 4, scale = scale),
-            'head'   : GraphicsObject(x, y, ['head_neutral', 'head_smile'],                       z = 3, scale = scale),
-            'tongue' : GraphicsObject(x, y, [None, 'tongue_neutral', 'tongue_up', 'tongue_down'], z = 2, scale = scale),
-            'mat'    : GraphicsObject(x, y, ['mat_purple'],                                       z = 1, scale = scale),
+            'headphones' : GraphicsObject(x, y, [None, 'headphones'],                                 z = 6, scale = scale),
+            'eyes'       : GraphicsObject(x, y, ['eyes_neutral', 'eyes_closed'],                      z = 5, scale = scale),
+            'tail'       : GraphicsObject(x, y, ['tail_neutral', 'tail_down'],                        z = 4, scale = scale),
+            'head'       : GraphicsObject(x, y, ['head_neutral', 'head_smile', 'head_upset'],         z = 3, scale = scale),
+            'tongue'     : GraphicsObject(x, y, [None, 'tongue_neutral', 'tongue_up', 'tongue_down'], z = 2, scale = scale),
+            'mat'        : GraphicsObject(x, y, ['mat_purple'],                                       z = 1, scale = scale),
         }
 
         self.active_animations = set()
@@ -103,7 +104,11 @@ class Snake:
             'shake'   : {'tail'  : [ (TL_NEUTRAL, 300), (TL_DOWN, 300) ],
                          },
             'smile'   : {'head'  : [ (H_SMILE, 0) ],
-                         }
+                         },
+            'noisy'   : {'head'  : [ (H_UPSET, 0) ],
+                         'eyes'  : [ (E_CLOSED, 0) ],
+                         'headphones'  : [ (HP_ON, 0) ],
+                         },
         }
 
     def activate_animation(self, animation):
