@@ -36,7 +36,7 @@ Y = [42,43]
 Z = [44]
 LETTERS = [A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z]
 
-BASE_WIDTH = 15
+BASE_WIDTH = 12
 BASE_HEIGHT = 30
 
 def extract_paths():

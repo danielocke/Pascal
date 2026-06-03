@@ -112,6 +112,8 @@ class App(QApplication):
                 except:
                     print('move failed')
             elif 'write' in cmd:
+                cmd = cmd.replace('\\n','\n')
+                print(cmd)
                 if "'" in cmd:
                     args = cmd.split("'")
                 else:
