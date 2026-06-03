@@ -1,17 +1,17 @@
 from PySide6.QtWidgets import (
-    QApplication,
-    QGraphicsView,
     QGraphicsScene,
-    QGraphicsPixmapItem
+    QGraphicsPixmapItem,
+    QGraphicsTextItem
 )
-from PySide6.QtGui import QPixmap
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtGui import QColor, QFont
+from PySide6.QtCore import QTimer
 
-from util import *
+from utils import *
 
 class GraphicsObject:
     def __init__(self, x:int, y:int, frames:list, z:int = 1, scale:float = 1.0, default_frame:int = 0):
         self.sprite = Sprite(frames, z)
+        
         self.x = x
         self.y = y
         self.scale = scale
@@ -24,6 +24,9 @@ class GraphicsObject:
         self.sprite.set_frame(default_frame)
         self.sprite.setPos(x, y)
         self.expired_animation = False
+
+        self.width = self.sprite.boundingRect().width()
+        self.height = self.sprite.boundingRect().height()
 
     def load(self, scene: QGraphicsScene):
         scene.addItem(self.sprite)
@@ -55,6 +58,39 @@ class GraphicsObject:
         self.animation_frame = (self.animation_frame + 1) % len(self.animation)
         self.sprite.set_frame(self.animation[self.animation_frame][0])
         QTimer.singleShot(self.animation[self.animation_frame][1], self.tick)
+    
+    def hide(self):
+        self.sprite.hide()
+
+    def show(self):
+        self.sprite.show()
+
+class TextObject(QGraphicsTextItem):
+    def __init__(self, x, y, font, size, txt = '', z = 1, col = 'red'):
+        super().__init__(txt)
+        
+        self.z = z
+        self.font = QFont(font,size)
+        if type(col) == str:
+            self.col = QColor(col)
+        else:
+            self.col = col
+
+        self.setZValue(z)
+        self.setFont(self.font)
+        self.setDefaultTextColor(self.col)
+
+        self.width = self.boundingRect().width()
+        self.height = self.boundingRect().height()
+        self.x = x - self.width//2
+        self.y = y - self.height//2
+        self.setPos(self.x, self.y)
+        
+
+    def changeText(self,txt):
+        self.setPlainText(txt)
+    def load(self, scene: QGraphicsScene):
+        scene.addItem(self)
 
 class Sprite(QGraphicsPixmapItem):
     def __init__(self, frames, z):
@@ -64,7 +100,7 @@ class Sprite(QGraphicsPixmapItem):
         self.current_frame = 0
 
         self.setZValue(z)
-        
+
 
     def set_frame(self, frame):
         self.current_frame = frame
@@ -141,3 +177,23 @@ class Snake:
         for obj in self.body.values():
             obj.load(scene)
     
+class Bubble:
+    def __init__(self,x,y,scale):
+        self.x = x
+        self.y = y
+        self.scale = scale
+        
+        self.bubble = GraphicsObject(x,y,frames=['bubble'], z = 7, scale = scale)
+        print(x + self.bubble.width//2)
+        print(y + self.bubble.width//2)
+        self.text   = TextObject(x + self.bubble.width//2,y + self.bubble.height//2,font='Times New Roman',size=24,txt='Hello World',z = 8)
+    
+    def load(self, scene):
+        self.bubble.load(scene)
+        self.text.load(scene)
+    def hide(self):
+        self.bubble.hide()
+        self.text.hide()
+    def show(self):
+        self.bubble.show()
+        self.text.show()

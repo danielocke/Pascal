@@ -3,43 +3,44 @@ from PySide6.QtWidgets import (
     QApplication,
     QGraphicsView,
     QGraphicsScene,
-    QGraphicsEllipseItem,
-    QWidget
 )
 from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QBrush, QColor, QPainter
+from PySide6.QtGui import QPainter, QGuiApplication
 
-from models import Snake, GraphicsObject
-from util import Async_Bridge
+from models import *
+from utils import Async_Bridge, COLOURS
+
+from paths import *
 
 class App(QApplication):
     def __init__(self):
         super().__init__(sys.argv)
 
         self.scene  = QGraphicsScene()
-        self.bg     = GraphicsObject(0,0, ['bg'], z = 0, scale = 0.4)
-        self.pascal = Snake(0, 0, scale=0.4)
-
-        self.bg.load(self.scene)
-        self.pascal.load(self.scene)
-
-
         self.view = QGraphicsView(self.scene)
 
         self._setup_view()
+
+        self.bg     = GraphicsObject(0,0, ['bg'], z = 0, scale = 0.4)
+        self.pascal = Snake(0, 0, scale=0.4)
+
+        self.letters = extract_paths()
+
+        self.bg.load(self.scene)
+        self.pascal.load(self.scene)     
 
         # Initialize async bridge:
         self.bridge = Async_Bridge()
         self.bridge.move_signal.connect(self.view.move)
         self.bridge.noisy_signal.connect(self._noisy)
+        self.bridge.write_signal.connect(self._write)
 
         # Initialize async command loop:
         threading.Thread(target=self._cmd_loop, daemon=True).start()
 
         self._flick()
         self.pascal.activate_animation('shake')
-        self.pascal.activate_animation('blink')
-        self._noisy()        
+        self.pascal.activate_animation('blink')     
 
     def _setup_view(self):
         
@@ -59,13 +60,21 @@ class App(QApplication):
             background: transparent;
             border: none;
         """)
+        screens = QGuiApplication.screens()
+        #if len(screens) > 1:
+        #    self.view.setGeometry(screens[1].geometry())
+        self.view.setGeometry(screens[0].geometry())
+        screen_rect = screens[0].geometry()
+        self.width  = screen_rect.width()
+        self.height = screen_rect.height()
 
+        
         self.view.setFrameShape(self.view.Shape.NoFrame)
 
         self.view.setRenderHint(QPainter.RenderHint.Antialiasing)
-        self.view.resize(500, 500)
-        self.view.move(0,0)
-        
+        self.view.showFullScreen()
+        self.view.setSceneRect(0, 0, screen_rect.width(), screen_rect.height())
+
         self.view.show()
     
     def _flick(self):
@@ -85,13 +94,16 @@ class App(QApplication):
         else:
             self.pascal.activate_animation('noisy')
 
+    def _write(self, text, x, y, col):
+        self.phrase = Phrase(text, self.letters, x, y, 10, COLOURS[col], screen_width = self.width)
+        self.phrase.load(self.scene)
+        self.phrase.start()
+
     def _cmd_loop(self):
         while True:
             cmd = input('> ')
 
-            if cmd == 'quit':
-                self.quit()
-            elif cmd == 'noisy':
+            if cmd == 'noisy':
                 self.bridge.noisy_signal.emit()
             elif 'move' in cmd:
                 crds = cmd.split(' ')
@@ -99,3 +111,14 @@ class App(QApplication):
                     self.bridge.move_signal.emit(int(crds[1]), int(crds[2]))
                 except:
                     print('move failed')
+            elif 'write' in cmd:
+                if "'" in cmd:
+                    args = cmd.split("'")
+                else:
+                    args = cmd.split('"')
+                
+                crds = args[2].lstrip().rstrip().split(' ')
+                try:
+                    self.bridge.write_signal.emit(args[1],int(crds[0]),int(crds[1]),args[3])
+                except:
+                    print('Write failed')

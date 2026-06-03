@@ -1,0 +1,171 @@
+import os
+from svgpathtools import svg2paths
+from utils import ASSET_PATH
+
+from PySide6.QtGui import QPainterPath, QPen
+from PySide6.QtWidgets import (
+    QGraphicsPathItem
+)
+from PySide6.QtCore import Qt, QTimer
+
+A = [0,1]
+B = [2]
+C = [3]
+D = [4]
+E = [5,6,7,8]
+F = [9,10]
+G = [11,12,13]
+H = [14,15,16]
+I = [17,18,19]
+J = [20]
+K = [21,22]
+L = [23]
+M = [24]
+N = [25]
+O = [26]
+P = [27,28]
+Q = [29,30]
+R = [31,32,33]
+S = [34]
+T = [35,36]
+U = [37]
+V = [38]
+W = [39]
+X = [40,41]
+Y = [42,43]
+Z = [44]
+LETTERS = [A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z]
+
+BASE_WIDTH = 15
+BASE_HEIGHT = 30
+
+def extract_paths():
+
+    paths, _ = svg2paths(os.path.join(ASSET_PATH,'sprites','handwriting_final.svg'))
+
+    points = []
+
+    for letter in LETTERS:
+        letter_paths = []        
+        for path in letter:
+            num_segs = len(paths[path])
+            stroke = []
+            for segment in paths[path]:
+                seg_points = 100//num_segs
+                stroke += [(segment.points(t).real, segment.points(t).imag) for t in [i/seg_points for i in range(seg_points + 1)]]
+            letter_paths.append(stroke)
+        points.append(letter_paths)
+
+    return points
+
+class PenStroke(QGraphicsPathItem):
+    def __init__(self, points, x, y, z, colour, stroke_size, scale):
+        super().__init__()
+        self.points = list(map(lambda p: (p[0]*scale + x,p[1]*scale + y), points))
+        self.current = 1
+ 
+        pen = QPen()
+        pen.setColor(colour)
+        pen.setWidth(stroke_size)
+        pen.setCapStyle(Qt.RoundCap)
+        pen.setJoinStyle(Qt.RoundJoin)
+
+        self.setPen(pen)
+
+        self.complete = False
+
+        self.setZValue(z)
+    
+    def tick(self):
+        if self.current >= len(self.points):
+            self.complete = True
+            return
+        
+        path = QPainterPath()
+        x0, y0 = self.points[0]
+        path.moveTo(x0, y0)
+        for x, y in self.points[1:self.current]:
+            path.lineTo(x,y)
+        
+        self.setPath(path)
+
+        self.current += 1
+    
+    def load(self, scene):
+        scene.addItem(self)
+
+class Letter:
+    def __init__(self, paths, x, y, z, colour, stroke_size, scale):
+        self.strokes = []
+        for path in paths:
+            self.strokes.append(PenStroke(path, x, y, z, colour, stroke_size, scale))
+        
+        self.current = 0
+        self.complete = False
+        
+    
+    def tick(self):
+        if self.strokes[self.current].complete:
+            self.current += 1
+        
+        if self.current >= len(self.strokes):
+            self.complete = True
+            return
+        
+        self.strokes[self.current].tick()
+    
+
+
+    def load(self, scene):
+        for stroke in self.strokes:
+            stroke.load(scene)
+
+class Phrase:
+    def __init__(self, phrase, all_letters, x, y, z, colour, screen_width, speed = 2, stroke_size = 10, scale = 5):
+        alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        self.phrase = phrase.upper()
+
+        self.letters = []
+        self.speed = speed
+        self.current = 0
+
+        cur_x = x
+        cur_y = y
+
+
+        for char in self.phrase: 
+            if char in alphabet:
+                paths = all_letters[alphabet.index(char)]
+
+                self.letters.append(Letter(paths, cur_x, cur_y, z, colour, stroke_size, scale))
+            
+                cur_x += BASE_WIDTH * scale
+            elif char == ' ':
+                cur_x += (BASE_WIDTH * scale)/2
+
+            elif char == '\n':
+                cur_y += (BASE_HEIGHT * scale)
+                cur_x = x
+
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.tick)
+
+        
+
+    def start(self):
+        self.timer.start(self.speed)
+
+    def tick(self):
+        if self.letters[self.current].complete:
+            self.current += 1
+        
+        if self.current >= len(self.letters):
+            self.timer.stop()
+            self.complete = True
+            return
+        
+        self.letters[self.current].tick()
+
+    def load(self, scene):
+        for letter in self.letters:
+            letter.load(scene)
