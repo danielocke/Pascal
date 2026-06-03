@@ -60,3 +60,4 @@ class Async_Bridge(QObject):
     move_signal  = Signal(int, int)
     noisy_signal = Signal()
     write_signal = Signal(str, int, int, str)
+    erase_signal = Signal()

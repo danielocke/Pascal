@@ -93,6 +93,8 @@ class PenStroke(QGraphicsPathItem):
     
     def load(self, scene):
         scene.addItem(self)
+    def delete(self, scene):
+        scene.removeItem(self)
 
 class Letter:
     def __init__(self, paths, x, y, z, colour, stroke_size, scale):
@@ -119,6 +121,11 @@ class Letter:
     def load(self, scene):
         for stroke in self.strokes:
             stroke.load(scene)
+
+    def delete(self, scene):
+        for stroke in self.strokes:
+            stroke.delete(scene)
+        self.strokes = []
 
 class Phrase:
     def __init__(self, phrase, all_letters, x, y, z, colour, screen_width, speed = 2, stroke_size = 10, scale = 5):
@@ -169,3 +176,7 @@ class Phrase:
     def load(self, scene):
         for letter in self.letters:
             letter.load(scene)
+    
+    def delete(self, scene):
+        for letter in self.letters:
+            letter.delete(scene)
