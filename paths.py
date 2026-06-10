@@ -77,9 +77,6 @@ class PenStroke(QGraphicsPathItem):
         self.setZValue(z)
     
     def tick(self):
-        if self.current >= len(self.points):
-            self.complete = True
-            return
         
         path = QPainterPath()
         x0, y0 = self.points[0]
@@ -91,13 +88,24 @@ class PenStroke(QGraphicsPathItem):
 
         self.current += 1
     
+        if self.current >= len(self.points):
+            # Reset index for writer animation
+            self.current = len(self.points) - 1
+            self.complete = True
+            return
+
     def load(self, scene):
         scene.addItem(self)
     def delete(self, scene):
         scene.removeItem(self)
 
+    def get_point(self):
+        return self.points[self.current]
+
 class Letter:
     def __init__(self, paths, x, y, z, colour, stroke_size, scale):
+        self.x = x
+        self.y = y
         self.strokes = []
         for path in paths:
             self.strokes.append(PenStroke(path, x, y, z, colour, stroke_size, scale))
@@ -111,12 +119,12 @@ class Letter:
             self.current += 1
         
         if self.current >= len(self.strokes):
+            # Reset current for writer animation
+            self.current = len(self.strokes) - 1
             self.complete = True
             return
         
         self.strokes[self.current].tick()
-    
-
 
     def load(self, scene):
         for stroke in self.strokes:
@@ -127,8 +135,11 @@ class Letter:
             stroke.delete(scene)
         self.strokes = []
 
+    def get_point(self):
+        return self.strokes[self.current].get_point()
+
 class Phrase:
-    def __init__(self, phrase, all_letters, x, y, z, colour, screen_width, speed = 2, stroke_size = 10, scale = 5):
+    def __init__(self, phrase, all_letters, x, y, z, colour, screen_width, writer, speed = 2, stroke_size = 10, scale = 5):
         alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
         self.phrase = phrase.upper()
 
@@ -136,9 +147,13 @@ class Phrase:
         self.speed = speed
         self.current = 0
 
+        self.start_x = x
+        self.start_y = y
+
         cur_x = x
         cur_y = y
 
+        self.writer = writer
 
         for char in self.phrase: 
             if char in alphabet:
@@ -160,18 +175,29 @@ class Phrase:
         
 
     def start(self):
+        self.writer.show()
+
+        self.writer.move(self.start_x, self.start_y - 180)
+        
         self.timer.start(self.speed)
 
     def tick(self):
         if self.letters[self.current].complete:
             self.current += 1
+            if self.current < len(self.letters):
+                self.writer.move(self.letters[self.current].x,self.letters[self.current].y-180)
         
         if self.current >= len(self.letters):
             self.timer.stop()
             self.complete = True
+            self.writer.hide()
             return
         
         self.letters[self.current].tick()
+
+        xw, yw = self.letters[self.current].get_point()
+
+        self.writer.move_write(xw, yw - 180)
 
     def load(self, scene):
         for letter in self.letters:

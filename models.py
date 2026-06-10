@@ -65,6 +65,11 @@ class GraphicsObject:
     def show(self):
         self.sprite.show()
 
+    def move(self, x, y):
+        self.sprite.setPos(x,y)
+        self.x = x
+        self.y = y
+
 class TextObject(QGraphicsTextItem):
     def __init__(self, x, y, font, size, txt = '', z = 1, col = 'red'):
         super().__init__(txt)
@@ -177,6 +182,78 @@ class Snake:
         for obj in self.body.values():
             obj.load(scene)
     
+    def hide(self):
+        for obj in self.body.values():
+            obj.hide()
+    def show(self):
+        for obj in self.body.values():
+            obj.show()
+
+class WriterSnake(Snake):
+    def __init__(self, x, y, scale=1):
+        self.x = x
+        self.y = y
+        self.scale = scale
+        self.body = {
+            'tail'       : GraphicsObject(x, y,  ['write_tail'],   z = 14, scale = scale),
+            'body'       : GraphicsObject(x, y,  ['write_body'],   z = 12, scale = scale),
+            'head'       : GraphicsObject(x, y,  ['write_head'],   z = 13, scale = scale),
+            'shadow'     : GraphicsObject(x, y,  ['write_shadow'], z = 11, scale = scale),
+        }
+        self.tot_segments = 10
+        self.body_segments = [GraphicsObject(x-i*10, y-i*10,  ['write_body'],   z = 12, scale = scale) for i in range(self.tot_segments)]
+        self.visible_segments = 0
+        self.hide_segments()
+    
+    def move(self, x, y):
+        for i in range(self.tot_segments):
+            self.body_segments[i].move(x - i*10, y - i*10)
+
+        self.x = x
+        self.y = y
+        for obj in self.body.values():
+            obj.move(x,y)
+    
+    def move_write(self, x, y):
+        num_segs = int(max(min(10 - (y - self.y) // 10, 10),0))
+        print(num_segs)
+
+        if self.visible_segments < num_segs:
+            for i in range(self.visible_segments, num_segs):
+                self.body_segments[i].show()
+
+        elif self.visible_segments > num_segs:
+            for i in range(num_segs, self.visible_segments):
+                self.body_segments[i].hide()
+
+        self.visible_segments = num_segs
+
+        for obj in self.body.values():
+            obj.move(x + 10 * (num_segs-1),self.y)
+
+        for i in range(self.tot_segments):
+            self.body_segments[i].move(x - i*10 + 10 * (num_segs-1), self.y - i*10)
+
+        self.body['tail'].move(x , self.y - 10 * (num_segs-1))
+
+        self.x = x
+    
+    def hide(self):
+        for obj in self.body.values():
+            obj.hide()
+        for obj in self.body_segments:
+            obj.hide()
+    
+    def load(self, scene):
+        for obj in self.body.values():
+            obj.load(scene)
+        for obj in self.body_segments:
+            obj.load(scene)
+    
+    def hide_segments(self):
+        for seg in self.body_segments:
+            seg.hide()
+
 class Bubble:
     def __init__(self,x,y,scale):
         self.x = x

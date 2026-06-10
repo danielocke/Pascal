@@ -23,13 +23,15 @@ class App(QApplication):
 
         self.bg     = GraphicsObject(0,0, ['bg'], z = 0, scale = 0.4)
         self.pascal = Snake(0, 0, scale=0.4)
+        self.pascal_write = WriterSnake(0,0,scale=0.4)
 
         self.phrases = []
 
         self.letters = extract_paths()
 
         self.bg.load(self.scene)
-        self.pascal.load(self.scene)     
+        self.pascal.load(self.scene)
+        self.pascal_write.load(self.scene)
 
         # Initialize async bridge:
         self.bridge = Async_Bridge()
@@ -64,9 +66,9 @@ class App(QApplication):
             border: none;
         """)
         screens = QGuiApplication.screens()
-        if len(screens) > 1:
-            self.view.setGeometry(screens[1].geometry())
-        #self.view.setGeometry(screens[0].geometry())
+        #if len(screens) > 1:
+        #    self.view.setGeometry(screens[1].geometry())
+        self.view.setGeometry(screens[0].geometry())
         screen_rect = screens[0].geometry()
         self.width  = screen_rect.width()
         self.height = screen_rect.height()
@@ -98,7 +100,7 @@ class App(QApplication):
             self.pascal.activate_animation('noisy')
 
     def _write(self, text, x, y, col):
-        phrase = Phrase(text, self.letters, x, y, 10, COLOURS[col], screen_width = self.width)
+        phrase = Phrase(text, self.letters, x, y, 10, COLOURS[col], screen_width = self.width, writer = self.pascal_write, speed= 2)
         self.phrases.append(phrase)
         phrase.load(self.scene)
         phrase.start()
@@ -125,10 +127,16 @@ class App(QApplication):
                     args = cmd.split("'")
                 else:
                     args = cmd.split('"')
-                
-                crds = args[2].lstrip().rstrip().split(' ')
+
+                if len(args) == 3:
+                    crds = (500,100)
+                    col  = 'red' 
+                else:
+                    crds = args[2].lstrip().rstrip().split(' ')
+                    col = args[3]
+
                 try:
-                    self.bridge.write_signal.emit(args[1],int(crds[0]),int(crds[1]),args[3])
+                    self.bridge.write_signal.emit(args[1],int(crds[0]),int(crds[1]),col)
                 except:
                     print('Write failed')
             elif cmd == 'erase':
