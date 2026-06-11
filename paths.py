@@ -177,7 +177,7 @@ class Phrase:
     def start(self):
         self.writer.show()
 
-        self.writer.move(self.start_x, self.start_y - 180)
+        self.writer.move(self.start_x - 15*self.writer.scale, self.start_y - 520*self.writer.scale)
         
         self.timer.start(self.speed)
 
@@ -185,7 +185,7 @@ class Phrase:
         if self.letters[self.current].complete:
             self.current += 1
             if self.current < len(self.letters):
-                self.writer.move(self.letters[self.current].x,self.letters[self.current].y-180)
+                self.writer.move(self.letters[self.current].x - 15*self.writer.scale,self.letters[self.current].y - 520*self.writer.scale)
         
         if self.current >= len(self.letters):
             self.timer.stop()
@@ -197,7 +197,7 @@ class Phrase:
 
         xw, yw = self.letters[self.current].get_point()
 
-        self.writer.move_write(xw, yw - 180)
+        self.writer.move_tail(xw, yw)
 
     def load(self, scene):
         for letter in self.letters:

@@ -23,7 +23,7 @@ class App(QApplication):
 
         self.bg     = GraphicsObject(0,0, ['bg'], z = 0, scale = 0.4)
         self.pascal = Snake(0, 0, scale=0.4)
-        self.pascal_write = WriterSnake(0,0,scale=0.4)
+        self.pascal_write = WriterSnake(0,0,scale=0.5)
 
         self.phrases = []
 
@@ -32,6 +32,7 @@ class App(QApplication):
         self.bg.load(self.scene)
         self.pascal.load(self.scene)
         self.pascal_write.load(self.scene)
+        self.pascal_write.hide()
 
         # Initialize async bridge:
         self.bridge = Async_Bridge()
@@ -100,6 +101,7 @@ class App(QApplication):
             self.pascal.activate_animation('noisy')
 
     def _write(self, text, x, y, col):
+        self.pascal_write.recolour_pen(col)
         phrase = Phrase(text, self.letters, x, y, 10, COLOURS[col], screen_width = self.width, writer = self.pascal_write, speed= 2)
         self.phrases.append(phrase)
         phrase.load(self.scene)

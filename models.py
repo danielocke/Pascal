@@ -3,7 +3,7 @@ from PySide6.QtWidgets import (
     QGraphicsPixmapItem,
     QGraphicsTextItem
 )
-from PySide6.QtGui import QColor, QFont
+from PySide6.QtGui import QColor, QFont, QPixmap, QPainter
 from PySide6.QtCore import QTimer
 
 from utils import *
@@ -188,71 +188,45 @@ class Snake:
     def show(self):
         for obj in self.body.values():
             obj.show()
+    
+    def move(self, x, y):
+        self.x = x
+        self.y = y
+        for obj in self.body.values():
+            obj.move(x,y)
 
 class WriterSnake(Snake):
     def __init__(self, x, y, scale=1):
         self.x = x
         self.y = y
         self.scale = scale
+
+
         self.body = {
-            'tail'       : GraphicsObject(x, y,  ['write_tail'],   z = 14, scale = scale),
-            'body'       : GraphicsObject(x, y,  ['write_body'],   z = 12, scale = scale),
+            'tail'       : GraphicsObject(x, y,  ['write_tail'],   z = 12, scale = scale),
             'head'       : GraphicsObject(x, y,  ['write_head'],   z = 13, scale = scale),
+            'colour'     : GraphicsObject(x, y,  ['write_colour'], z = 11, scale = scale),
             'shadow'     : GraphicsObject(x, y,  ['write_shadow'], z = 11, scale = scale),
         }
-        self.tot_segments = 10
-        self.body_segments = [GraphicsObject(x-i*10, y-i*10,  ['write_body'],   z = 12, scale = scale) for i in range(self.tot_segments)]
-        self.visible_segments = 0
-        self.hide_segments()
+
     
-    def move(self, x, y):
-        for i in range(self.tot_segments):
-            self.body_segments[i].move(x - i*10, y - i*10)
-
-        self.x = x
-        self.y = y
-        for obj in self.body.values():
-            obj.move(x,y)
+    def move_tail(self, x, y):
+        # Based on location of pen tip on tail sprite
+        self.body['tail'].move(x - 100*self.scale, y - 575*self.scale)
+        self.body['colour'].move(x - 100*self.scale, y - 575*self.scale)   
     
-    def move_write(self, x, y):
-        num_segs = int(max(min(10 - (y - self.y) // 10, 10),0))
-        print(num_segs)
+    def recolour_pen(self, col):
+        img = self.body['colour'].sprite.pixmap()
+        col_img = QPixmap(img.size())
+        col_img.fill(Qt.transparent)
 
-        if self.visible_segments < num_segs:
-            for i in range(self.visible_segments, num_segs):
-                self.body_segments[i].show()
+        painter = QPainter(col_img)
+        painter.drawPixmap(0,0, img)
+        painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
+        painter.fillRect(col_img.rect(), COLOURS[col])
+        painter.end()
 
-        elif self.visible_segments > num_segs:
-            for i in range(num_segs, self.visible_segments):
-                self.body_segments[i].hide()
-
-        self.visible_segments = num_segs
-
-        for obj in self.body.values():
-            obj.move(x + 10 * (num_segs-1),self.y)
-
-        for i in range(self.tot_segments):
-            self.body_segments[i].move(x - i*10 + 10 * (num_segs-1), self.y - i*10)
-
-        self.body['tail'].move(x , self.y - 10 * (num_segs-1))
-
-        self.x = x
-    
-    def hide(self):
-        for obj in self.body.values():
-            obj.hide()
-        for obj in self.body_segments:
-            obj.hide()
-    
-    def load(self, scene):
-        for obj in self.body.values():
-            obj.load(scene)
-        for obj in self.body_segments:
-            obj.load(scene)
-    
-    def hide_segments(self):
-        for seg in self.body_segments:
-            seg.hide()
+        self.body['colour'].sprite.setPixmap(col_img)
 
 class Bubble:
     def __init__(self,x,y,scale):
@@ -261,8 +235,6 @@ class Bubble:
         self.scale = scale
         
         self.bubble = GraphicsObject(x,y,frames=['bubble'], z = 7, scale = scale)
-        print(x + self.bubble.width//2)
-        print(y + self.bubble.width//2)
         self.text   = TextObject(x + self.bubble.width//2,y + self.bubble.height//2,font='Times New Roman',size=24,txt='Hello World',z = 8)
     
     def load(self, scene):
