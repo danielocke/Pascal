@@ -139,12 +139,11 @@ class Letter:
         return self.strokes[self.current].get_point()
 
 class Phrase:
-    def __init__(self, phrase, all_letters, x, y, z, colour, screen_width, writer, speed = 2, stroke_size = 10, scale = 5):
+    def __init__(self, phrase, all_letters, x, y, z, colour, screen_width, stroke_size = 10, scale = 5):
         alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
         self.phrase = phrase.upper()
 
         self.letters = []
-        self.speed = speed
         self.current = 0
 
         self.start_x = x
@@ -153,7 +152,7 @@ class Phrase:
         cur_x = x
         cur_y = y
 
-        self.writer = writer
+        self.complete = False
 
         for char in self.phrase: 
             if char in alphabet:
@@ -169,35 +168,24 @@ class Phrase:
                 cur_y += (BASE_HEIGHT * scale)
                 cur_x = x
 
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.tick)
-
-        
-
-    def start(self):
-        self.writer.show()
-
-        self.writer.move(self.start_x - 15*self.writer.scale, self.start_y - 520*self.writer.scale)
-        
-        self.timer.start(self.speed)
 
     def tick(self):
+        move_writer = False
+
         if self.letters[self.current].complete:
             self.current += 1
             if self.current < len(self.letters):
-                self.writer.move(self.letters[self.current].x - 15*self.writer.scale,self.letters[self.current].y - 520*self.writer.scale)
-        
+                move_writer = True
+
         if self.current >= len(self.letters):
-            self.timer.stop()
             self.complete = True
-            self.writer.hide()
-            return
+            # reset current to avoid indexing issues.
+            self.current -= 1
+            return move_writer
         
         self.letters[self.current].tick()
 
-        xw, yw = self.letters[self.current].get_point()
-
-        self.writer.move_tail(xw, yw)
+        return move_writer
 
     def load(self, scene):
         for letter in self.letters:

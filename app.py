@@ -102,10 +102,11 @@ class App(QApplication):
 
     def _write(self, text, x, y, col):
         self.pascal_write.recolour_pen(col)
-        phrase = Phrase(text, self.letters, x, y, 10, COLOURS[col], screen_width = self.width, writer = self.pascal_write, speed= 2)
+        phrase = Phrase(text, self.letters, x, y, 10, COLOURS[col], screen_width = self.width)
         self.phrases.append(phrase)
         phrase.load(self.scene)
-        phrase.start()
+        
+        self.pascal_write.write(phrase)
 
     def _erase(self):
         for phrase in self.phrases:

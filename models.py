@@ -6,6 +6,8 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QColor, QFont, QPixmap, QPainter
 from PySide6.QtCore import QTimer
 
+import numpy as np
+
 from utils import *
 
 class GraphicsObject:
@@ -196,11 +198,18 @@ class Snake:
             obj.move(x,y)
 
 class WriterSnake(Snake):
-    def __init__(self, x, y, scale=1):
+    def __init__(self, x, y, scale=1, write_speed = 2, move_speed = 5):
         self.x = x
         self.y = y
         self.scale = scale
+        self.write_speed = write_speed
+        self.move_speed  = move_speed
 
+        # Destinations for movement animation
+        self.dest_x = 0
+        self.dest_y = 0
+        self.moving = False
+        self.tail_moving = False
 
         self.body = {
             'tail'       : GraphicsObject(x, y,  ['write_tail'],   z = 12, scale = scale),
@@ -209,11 +218,22 @@ class WriterSnake(Snake):
             'shadow'     : GraphicsObject(x, y,  ['write_shadow'], z = 11, scale = scale),
         }
 
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.tick)
     
+        self.current_phrase = None
+        self.phrase_queue = []
+
+    def move(self, x, y):
+        self.dest_x = x
+        self.dest_y = y
+        self.moving = True
+
     def move_tail(self, x, y):
         # Based on location of pen tip on tail sprite
-        self.body['tail'].move(x - 100*self.scale, y - 575*self.scale)
-        self.body['colour'].move(x - 100*self.scale, y - 575*self.scale)   
+        self.dest_x = x - 100*self.scale
+        self.dest_y = y - 575*self.scale
+        self.tail_moving = True
     
     def recolour_pen(self, col):
         img = self.body['colour'].sprite.pixmap()
@@ -228,6 +248,79 @@ class WriterSnake(Snake):
 
         self.body['colour'].sprite.setPixmap(col_img)
 
+    def write(self, phrase):
+
+        if self.current_phrase != None:
+            self.phrase_queue.append(phrase)
+            return
+
+        self.current_phrase = phrase
+
+        self.show()
+
+        self.move(self.current_phrase.start_x - 15*self.scale, self.current_phrase.start_y - 520*self.scale)
+        
+        self.timer.start(self.write_speed)
+
+
+    def tick(self):
+        
+        # If writer is done writing a phrase. 
+        if self.current_phrase.complete:
+            if len(self.phrase_queue) > 0:
+                self.current_phrase = self.phrase_queue.pop(0)
+                self.move(self.current_phrase.start_x - 15*self.scale, self.current_phrase.start_y - 520*self.scale)
+            else:
+                self.current_phrase = None
+                self.timer.stop()
+                self.hide()
+                return
+
+        # If writer is moving to another letter/line, don't draw until reached.
+        if self.moving:
+            if abs(self.x - self.dest_x) < self.move_speed and abs(self.y - self.dest_y) < self.move_speed:
+                self.moving = False
+            else:
+                direction = np.array([self.dest_x - self.x, self.dest_y - self.y])
+                direction = direction / np.linalg.norm(direction)
+
+                self.x += (direction[0] * self.move_speed) / 10
+                self.y += (direction[1] * self.move_speed) / 10
+
+
+                for obj in self.body.values():
+                    obj.move(self.x, self.y)
+            return
+
+        if self.tail_moving:
+            tail_x, tail_y = self.body['tail'].x, self.body['tail'].y
+
+            if abs(tail_x - self.dest_x) < self.move_speed and abs(tail_y - self.dest_y) < self.move_speed:
+                self.tail_moving = False
+            else:
+                direction = np.array([self.dest_x - tail_x, self.dest_y - tail_y])
+                direction = direction / np.linalg.norm(direction)
+
+                tail_x += direction[0] * self.move_speed
+                tail_y += direction[1] * self.move_speed
+
+
+                self.body['tail'].move(tail_x,tail_y)
+                self.body['colour'].move(tail_x, tail_y)
+            return
+
+        move = self.current_phrase.tick()
+
+        if move:
+            current_letter = self.current_phrase.letters[self.current_phrase.current]
+            self.move(current_letter.x - 15*self.scale, current_letter.y - 520*self.scale)
+            return
+        
+
+        x_tail, y_tail = self.current_phrase.letters[self.current_phrase.current].get_point()
+
+        self.move_tail(x_tail, y_tail)
+        
 class Bubble:
     def __init__(self,x,y,scale):
         self.x = x
