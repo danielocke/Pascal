@@ -34,27 +34,53 @@ W = [39]
 X = [40,41]
 Y = [42,43]
 Z = [44]
+
+N0 = [0,1]
+N1 = [2]
+N2 = [3]
+N3 = [4]
+N4 = [5,6]
+N5 = [7]
+N6 = [8]
+N7 = [9]
+N8 = [10]
+N9 = [11]
+
+
 LETTERS = [A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z]
+NUMS = [N0,N1,N2,N3,N4,N5,N6,N7,N8,N9]
 
 BASE_WIDTH = 12
 BASE_HEIGHT = 30
 
 def extract_paths():
 
-    paths, _ = svg2paths(os.path.join(ASSET_PATH,'sprites','handwriting_final.svg'))
-
+    raw_let_paths, _ = svg2paths(os.path.join(ASSET_PATH,'sprites','handwriting_final.svg'))
+    raw_num_paths, _ = svg2paths(os.path.join(ASSET_PATH,'sprites','numbers.svg'))
     points = []
 
     for letter in LETTERS:
         letter_paths = []        
         for path in letter:
-            num_segs = len(paths[path])
+            num_segs = len(raw_let_paths[path])
             stroke = []
-            for segment in paths[path]:
+            for segment in raw_let_paths[path]:
                 seg_points = 100//num_segs
                 stroke += [(segment.points(t).real, segment.points(t).imag) for t in [i/seg_points for i in range(seg_points + 1)]]
             letter_paths.append(stroke)
         points.append(letter_paths)
+    
+    for num in NUMS:
+        num_paths = []        
+        for path in num:
+            num_segs = len(raw_num_paths[path])
+            stroke = []
+            for segment in raw_num_paths[path]:
+                seg_points = 100//num_segs
+                stroke += [(segment.points(t).real, segment.points(t).imag) for t in [i/seg_points for i in range(seg_points + 1)]]
+            num_paths.append(stroke)
+        points.append(num_paths)
+
 
     return points
 
@@ -139,8 +165,9 @@ class Letter:
         return self.strokes[self.current].get_point()
 
 class Phrase:
-    def __init__(self, phrase, all_letters, x, y, z, colour, screen_width, stroke_size = 10, scale = 5):
+    def __init__(self, phrase, all_chars, x, y, z, colour, screen_width, stroke_size = 10, scale = 5):
         alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        nums = '0123456789'
         self.phrase = phrase.upper()
 
         self.letters = []
@@ -156,11 +183,16 @@ class Phrase:
 
         for char in self.phrase: 
             if char in alphabet:
-                paths = all_letters[alphabet.index(char)]
+                paths = all_chars[alphabet.index(char)]
 
                 self.letters.append(Letter(paths, cur_x, cur_y, z, colour, stroke_size, scale))
             
                 cur_x += BASE_WIDTH * scale
+            elif char in nums:
+                paths = all_chars[len(alphabet) + nums.index(char)]
+                self.letters.append(Letter(paths, cur_x, cur_y, z, colour, stroke_size, scale))
+                cur_x += BASE_WIDTH * scale
+
             elif char == ' ':
                 cur_x += (BASE_WIDTH * scale)/2
 

@@ -213,7 +213,7 @@ class WriterSnake(Snake):
 
         self.body = {
             'tail'       : GraphicsObject(x, y,  ['write_tail'],   z = 12, scale = scale),
-            'head'       : GraphicsObject(x, y,  ['write_head'],   z = 13, scale = scale),
+            'head'       : GraphicsObject(x, y,  ['write_head','write_head_down'],   z = 13, scale = scale),
             'colour'     : GraphicsObject(x, y,  ['write_colour'], z = 11, scale = scale),
             'shadow'     : GraphicsObject(x, y,  ['write_shadow'], z = 11, scale = scale),
         }
@@ -223,6 +223,21 @@ class WriterSnake(Snake):
     
         self.current_phrase = None
         self.phrase_queue = []
+
+        self.active_animations = set()
+        self.define_animations()
+
+    def define_animations(self):
+        self.animations = {
+            'bob'     : {'head'  : [ (WR_NEUTRAL, 500), (WR_DOWN, 250) ],
+                         },
+        }
+    def goto(self, x, y):
+        self.x = x
+        self.y = y
+        self.dest_x = x
+        self.dest_y = y
+        self.moving = False
 
     def move(self, x, y):
         self.dest_x = x
@@ -256,7 +271,11 @@ class WriterSnake(Snake):
 
         self.current_phrase = phrase
 
+        self.goto(0,0)
+
         self.show()
+
+        #self.activate_animation('bob')
 
         self.move(self.current_phrase.start_x - 15*self.scale, self.current_phrase.start_y - 520*self.scale)
         
@@ -273,6 +292,7 @@ class WriterSnake(Snake):
             else:
                 self.current_phrase = None
                 self.timer.stop()
+                #self.deactivate_animation('bob')
                 self.hide()
                 return
 

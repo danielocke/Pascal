@@ -6,7 +6,7 @@ from PySide6.QtGui import QPixmap, QColor
 from PySide6.QtCore import Qt, QObject, Signal
 import pandas as pd
 
-ASSET_PATH = os.path.abspath('./assets')
+ASSET_PATH = os.path.join(os.path.dirname(__file__),'assets')
 
 COLOURS = {
     'white'  : QColor(255, 255, 255),
@@ -41,6 +41,10 @@ TG_DOWN    = 3
 # Headphones
 HP_ON = 1
 
+
+# Writer
+WR_NEUTRAL = 0
+WR_DOWN    = 1
 
 def load_pixmap(filename: (str|None), filetype:str = 'png'):
     if filename == None:

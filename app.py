@@ -44,9 +44,13 @@ class App(QApplication):
         # Initialize async command loop:
         threading.Thread(target=self._cmd_loop, daemon=True).start()
 
-        self._flick()
-        self.pascal.activate_animation('shake')
-        self.pascal.activate_animation('blink')     
+        #self._flick()
+        #self.pascal.activate_animation('shake')
+        #self.pascal.activate_animation('blink')     
+
+        self.bg.hide()
+        self.pascal.hide()
+
 
     def _setup_view(self):
         
