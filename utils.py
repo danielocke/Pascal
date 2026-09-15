@@ -41,10 +41,18 @@ TG_DOWN    = 3
 # Headphones
 HP_ON = 1
 
-
 # Writer
 WR_NEUTRAL = 0
 WR_DOWN    = 1
+
+# Peek
+PK_TG_NEUTRAL = 1
+PK_TG_LEFT    = 2
+PK_TG_RIGHT   = 3
+PK_E_LEFT     = 0
+PK_E_RIGHT    = 1
+PK_E_GONE     = 2
+PK_H_GONE     = 1
 
 def load_pixmap(filename: (str|None), filetype:str = 'png'):
     if filename == None:
@@ -59,6 +67,9 @@ def generate_line(category):
     data = pd.read_csv(os.path.join(ASSET_PATH,'dialogue','lines.csv'))
     lines = data.loc[(data['category'] == category), 'line']
     return lines.loc[random.randint(0,len(lines) - 1)]    
+
+def count_assets(path):
+    return len(os.listdir(os.path.join(ASSET_PATH,path)))
 
 class Async_Bridge(QObject):
     move_signal  = Signal(int, int)

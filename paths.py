@@ -65,7 +65,7 @@ def extract_paths():
             num_segs = len(raw_let_paths[path])
             stroke = []
             for segment in raw_let_paths[path]:
-                seg_points = 100//num_segs
+                seg_points = 50//num_segs
                 stroke += [(segment.points(t).real, segment.points(t).imag) for t in [i/seg_points for i in range(seg_points + 1)]]
             letter_paths.append(stroke)
         points.append(letter_paths)
@@ -76,7 +76,7 @@ def extract_paths():
             num_segs = len(raw_num_paths[path])
             stroke = []
             for segment in raw_num_paths[path]:
-                seg_points = 100//num_segs
+                seg_points = 50//num_segs
                 stroke += [(segment.points(t).real, segment.points(t).imag) for t in [i/seg_points for i in range(seg_points + 1)]]
             num_paths.append(stroke)
         points.append(num_paths)

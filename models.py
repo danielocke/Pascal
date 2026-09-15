@@ -198,7 +198,7 @@ class Snake:
             obj.move(x,y)
 
 class WriterSnake(Snake):
-    def __init__(self, x, y, scale=1, write_speed = 2, move_speed = 5):
+    def __init__(self, x, y, scale=1, write_speed = 2, move_speed = 3):
         self.x = x
         self.y = y
         self.scale = scale
@@ -210,10 +210,15 @@ class WriterSnake(Snake):
         self.dest_y = 0
         self.moving = False
         self.tail_moving = False
+        self.num_head_frames = count_assets('sprites/write_head')
+        head_frames = [f'write_head/write_head_{i:02d}' for i in range(self.num_head_frames)]
+
+        self.HEAD_OFFSET_X = 125
+        self.HEAD_OFFSET_Y = 220
 
         self.body = {
             'tail'       : GraphicsObject(x, y,  ['write_tail'],   z = 12, scale = scale),
-            'head'       : GraphicsObject(x, y,  ['write_head','write_head_down'],   z = 13, scale = scale),
+            'head'       : GraphicsObject(x, y,  head_frames,      z = 13, scale = scale),
             'colour'     : GraphicsObject(x, y,  ['write_colour'], z = 11, scale = scale),
             'shadow'     : GraphicsObject(x, y,  ['write_shadow'], z = 11, scale = scale),
         }
@@ -229,7 +234,7 @@ class WriterSnake(Snake):
 
     def define_animations(self):
         self.animations = {
-            'bob'     : {'head'  : [ (WR_NEUTRAL, 500), (WR_DOWN, 250) ],
+            'bob'     : {'head'  : [(i,1000//30) for i in range(self.num_head_frames)],
                          },
         }
     def goto(self, x, y):
@@ -275,7 +280,7 @@ class WriterSnake(Snake):
 
         self.show()
 
-        #self.activate_animation('bob')
+        self.activate_animation('bob')
 
         self.move(self.current_phrase.start_x - 15*self.scale, self.current_phrase.start_y - 520*self.scale)
         
@@ -292,7 +297,7 @@ class WriterSnake(Snake):
             else:
                 self.current_phrase = None
                 self.timer.stop()
-                #self.deactivate_animation('bob')
+                self.deactivate_animation('bob')
                 self.hide()
                 return
 
@@ -308,8 +313,11 @@ class WriterSnake(Snake):
                 self.y += (direction[1] * self.move_speed) / 10
 
 
-                for obj in self.body.values():
-                    obj.move(self.x, self.y)
+                for seg in self.body:
+                    if seg == 'head':
+                        self.body[seg].move(self.x + self.HEAD_OFFSET_X, self.y + self.HEAD_OFFSET_Y)
+                    else:
+                        self.body[seg].move(self.x, self.y)
             return
 
         if self.tail_moving:
@@ -341,6 +349,69 @@ class WriterSnake(Snake):
 
         self.move_tail(x_tail, y_tail)
         
+class PeekSnake(Snake):
+    def __init__(self, x, y, scale=1):
+        super().__init__(x, y, scale)
+        self.body = {
+            'eyes'       : GraphicsObject(x, y, ['peek_eyes_left', 'peek_eyes_right', None],                             z = 25, scale = scale),
+            'tongue'     : GraphicsObject(x, y, [None, 'peek_tongue_neutral', 'peek_tongue_left', 'peek_tongue_right'], z = 24, scale = scale),
+            'head'       : GraphicsObject(x, y, ['peek_head', None],                                                     z = 23, scale = scale),
+            'dust'       : GraphicsObject(x, y, [None,'peek_dust'],                                                     z = 22, scale = scale),
+        }
+
+        self.active_animations = set()
+        self.define_animations()
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.tick)
+
+        self.PEEK_FRAMES = 120
+        self.MOVE_SPEED  = 1000//60
+        self.frame = 0
+        self.dir = (0,0)
+        self.rising = False
+    
+    def define_animations(self):
+        self.animations = {
+            'flick'   : {'tongue': [ (TG_NEUTRAL, 50), (TG_UP, 50), (TG_NEUTRAL, 50), (TG_DOWN, 50) ],
+                         },
+            'look'    : {'eyes'  : [ (PK_E_LEFT, 500), (PK_E_RIGHT, 500) ],
+                         },
+            'poof'    : {
+                        'dust'   : [(1, 1000)],
+                        'head'   : [(PK_H_GONE, 1000)],
+                        'eyes'   : [(PK_E_GONE, 1000)],
+                        'tongue' :[(0, 1000)]
+            }
+        }
+    def peek(self, x_bounds, y_bounds, edges):
+        # Edges 0/1 are top/bottom, 2/3 are sides.
+
+        min_x,max_x = x_bounds
+        min_y,max_y = y_bounds
+
+        side = random.randint(0,3)
+        
+        if side < 2:
+            x = edges[side]
+            y = random.randint(min_y,max_y)
+            dir = (0,1) if side == 0 else (0,-1)
+        else:
+            x = random.randint(min_x,max_x)
+            y = edges[side]
+            dir = (1,0) if side == 3 else (-1,0)
+
+        self.rising = True
+        self.move(x,y)
+        self.dir = dir
+        self.timer.start(self.MOVE_SPEED)
+
+    def tick(self):
+        if self.frame >= self.PEEK_FRAMES and self.rising:
+            self.rising = False
+            self.frame = 0
+            self.timer.stop()
+            QTimer.singleShot(5000,self.timer.start)
+
 class Bubble:
     def __init__(self,x,y,scale):
         self.x = x
