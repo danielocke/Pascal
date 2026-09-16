@@ -24,6 +24,7 @@ class App(QApplication):
         self.bg     = GraphicsObject(0,0, ['bg'], z = 0, scale = 0.4)
         self.pascal = Snake(0, 0, scale=0.4)
         self.pascal_write = WriterSnake(0,0,scale=0.5)
+        self.pascal_peek  = PeekSnake(0,0,scale=0.5)
 
         self.phrases = []
 
@@ -33,6 +34,11 @@ class App(QApplication):
         self.pascal.load(self.scene)
         self.pascal_write.load(self.scene)
         self.pascal_write.hide()
+        self.pascal_peek.load(self.scene)
+        self.pascal_peek.hide()
+
+        self.peek_timer = QTimer()
+        self.peek_timer.timeout.connect(self._peek)
 
         # Initialize async bridge:
         self.bridge = Async_Bridge()
@@ -40,6 +46,8 @@ class App(QApplication):
         self.bridge.noisy_signal.connect(self._noisy)
         self.bridge.write_signal.connect(self._write)
         self.bridge.erase_signal.connect(self._erase)
+        self.bridge.peek_signal.connect(self._peek)
+        self.bridge.stop_peek_signal.connect(self._stop_peek)
 
         # Initialize async command loop:
         threading.Thread(target=self._cmd_loop, daemon=True).start()
@@ -116,12 +124,26 @@ class App(QApplication):
         for phrase in self.phrases:
             phrase.delete(self.scene)
 
+    def _peek(self):
+        self.pascal_peek.peek_active = True
+        self.pascal_peek.show()
+        x_bounds = (min(self.width,200), max(0,self.width - 200))
+        y_bounds = (min(self.height,200), max(0,self.height - 200))
+        self.pascal_peek.peek(x_bounds,y_bounds,(0,self.height,0,self.width))
+
+    def _stop_peek(self):
+        self.pascal_peek.peek_active = False
+
     def _cmd_loop(self):
         while True:
             cmd = input('> ')
 
             if cmd == 'noisy':
                 self.bridge.noisy_signal.emit()
+            elif cmd == 'peek':
+                self.bridge.peek_signal.emit()
+            elif cmd == 'stop_peek':
+                self.bridge.stop_peek_signal.emit()
             elif 'move' in cmd:
                 crds = cmd.split(' ')
                 try:

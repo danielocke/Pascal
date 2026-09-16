@@ -20,7 +20,7 @@ class GraphicsObject:
         self.animation = None
         self.animation_frame = 0
         self.default_frame = default_frame
-
+        self.rotation = 0
         # Setting sprite info:
         self.sprite.setScale(scale)
         self.sprite.set_frame(default_frame)
@@ -71,7 +71,8 @@ class GraphicsObject:
         self.sprite.setPos(x,y)
         self.x = x
         self.y = y
-
+    def rotate(self, angle):
+        self.sprite.setRotation(angle)
 class TextObject(QGraphicsTextItem):
     def __init__(self, x, y, font, size, txt = '', z = 1, col = 'red'):
         super().__init__(txt)
@@ -364,11 +365,14 @@ class PeekSnake(Snake):
         self.timer = QTimer()
         self.timer.timeout.connect(self.tick)
 
-        self.PEEK_FRAMES = 120
+        self.PEEK_FRAMES = 400
         self.MOVE_SPEED  = 1000//60
         self.frame = 0
         self.dir = (0,0)
         self.rising = False
+        self.peek_active = True
+
+        self.peek_params = None
     
     def define_animations(self):
         self.animations = {
@@ -384,33 +388,53 @@ class PeekSnake(Snake):
             }
         }
     def peek(self, x_bounds, y_bounds, edges):
-        # Edges 0/1 are top/bottom, 2/3 are sides.
 
+        self.peek_params = (x_bounds,y_bounds,edges)
+
+        # Edges 0/1 are top/bottom, 2/3 are sides.
+        rotations = (180, 0, 90, 270)
         min_x,max_x = x_bounds
         min_y,max_y = y_bounds
 
         side = random.randint(0,3)
         
-        if side < 2:
-            x = edges[side]
-            y = random.randint(min_y,max_y)
-            dir = (0,1) if side == 0 else (0,-1)
-        else:
+        if side < 2:            
             x = random.randint(min_x,max_x)
             y = edges[side]
-            dir = (1,0) if side == 3 else (-1,0)
+            dir = (0,1) if side == 0 else (0,-1)
+        else:
+            x = edges[side]
+            y = random.randint(min_y,max_y)
+            dir = (1,0) if side == 2 else (-1,0)
 
         self.rising = True
         self.move(x,y)
         self.dir = dir
+
+        for seg in self.body.values():
+            seg.rotate(rotations[side])
+
         self.timer.start(self.MOVE_SPEED)
 
     def tick(self):
-        if self.frame >= self.PEEK_FRAMES and self.rising:
-            self.rising = False
+        if self.frame >= self.PEEK_FRAMES:
             self.frame = 0
             self.timer.stop()
-            QTimer.singleShot(5000,self.timer.start)
+            if self.rising:
+                self.activate_animation('look')
+                self.activate_animation('flick')
+                self.rising = False
+                self.dir = (-1*self.dir[0],-1*self.dir[1])
+                QTimer.singleShot(2000, lambda: self.timer.start(self.MOVE_SPEED))
+            elif self.peek_active:
+                QTimer.singleShot(random.randint(2,5) * 60000, lambda: self.peek(*self.peek_params))
+            else:
+                self.hide()
+            return
+        self.frame += 1
+        self.move(self.x + self.dir[0], self.y + self.dir[1])
+        self.deactivate_animation('look')
+        self.deactivate_animation('flick')
 
 class Bubble:
     def __init__(self,x,y,scale):
